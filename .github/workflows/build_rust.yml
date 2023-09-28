@@ -19,10 +19,13 @@ jobs:
           toolchain: stable
 
       - name: Build for AMD64
-        run: cargo build --release
+        run: |
+          cd replacetxt
+          cargo build --release
 
       - name: Build for ARM (macOS)
         run: |
+          cd replacetxt
           brew install qemu
           rustup target add aarch64-apple-darwin
           cargo build --release --target=aarch64-apple-darwin
