@@ -1,8 +1,10 @@
 use clap::Parser;
 
-/// program to search for start and end marker and replace the text inbetween with new text.
+/// replacetxt : program to search for start and end markers and replace the text in between with new text.
+///
+/// https://github.com/diepes/rust-replace-txt-between-markers
 #[derive(Parser, Debug)]
-#[command(author, version, about, long_about = None)]
+#[command(author="Pieter E Smit", version, about, long_about )]
 pub struct Args {
     /// start Marker string
     #[arg(short, long)]
