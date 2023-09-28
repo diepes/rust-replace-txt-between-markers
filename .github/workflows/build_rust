@@ -1,0 +1,46 @@
+name: Build and Publish
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build_and_publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+
+      - name: Build for AMD64
+        run: cargo build --release
+
+      - name: Build for ARM (macOS)
+        run: |
+          brew install qemu
+          rustup target add aarch64-apple-darwin
+          cargo build --release --target=aarch64-apple-darwin
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        with:
+          files:
+            - replacetxt/target/release/replacetxt
+            - replacetxt/target/aarch64-apple-darwin/release/replacetxt
+          # token: ${{ secrets.GITHUB_TOKEN }}
+        env:
+          CRATE_NAME: replacetxt
+
+      - name: Publish Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            ${{ steps.create_release.outputs.upload_url }}/*
+          # token: ${{ secrets.GITHUB_TOKEN }}
