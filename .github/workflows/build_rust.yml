@@ -34,10 +34,11 @@ jobs:
         id: create_release
         uses: actions/create-release@v1
         with:
-          files:
-            - replacetxt/target/release/replacetxt
-            - replacetxt/target/aarch64-apple-darwin/release/replacetxt
-          # token: ${{ secrets.GITHUB_TOKEN }}
+          files: |
+            replacetxt/target/release/replacetxt
+            replacetxt/target/aarch64-apple-darwin/release/replacetxt
+          # This token is provided by Actions, you do not need to create your own token
+          token: ${{ secrets.GITHUB_TOKEN }}
         env:
           CRATE_NAME: replacetxt
 
@@ -46,4 +47,4 @@ jobs:
         with:
           files: |
             ${{ steps.create_release.outputs.upload_url }}/*
-          # token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
