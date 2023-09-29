@@ -47,8 +47,9 @@ jobs:
           override: true
 
       - name: Build for mac
-        run: cargo build --all --release && strip target/release/replacetxt && mv target/release/replacetxt target/release/replacetxt-macos
-
+        run: |
+          cargo build --all --release && strip target/release/replacetxt && mv target/release/replacetxt target/release/replacetxt-macos
+          target/release/replacetxt-macos
 
 
   create_release:
@@ -62,7 +63,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            ${{ runner.workspace }}/target/release/replacetxt-amd
-            ${{ runner.workspace }}/target/release/replacetxt-macos
+            target/release/replacetxt-amd64
+            target/release/replacetxt-macos
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
