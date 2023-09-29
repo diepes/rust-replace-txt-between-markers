@@ -62,7 +62,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            ${{ runner.workspace }}/artifact-amd
-            ${{ runner.workspace }}/artifact-macos
+            ${{ runner.workspace }}/target/release/replacetxt-amd
+            ${{ runner.workspace }}/target/release/replacetxt-macos
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
