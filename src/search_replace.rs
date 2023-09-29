@@ -6,11 +6,12 @@ pub fn update(
     replace: &str,
     lines: Vec<String>,
     verbose: bool,
-) -> Vec<String> {
+) -> (bool, Vec<String>) {
     let mut updated_lines = Vec::new();
     let mut found_start = false;
     let mut found_end = false;
     let mut line_cnt = 0;
+    let mut exit_with_error = false;
 
     for line in lines {
         line_cnt += 1;
@@ -34,8 +35,11 @@ pub fn update(
             }
         } else if !found_start {
             updated_lines.push(line.clone());
-            if verbose && found_start {
-                eprint!("missmatch in start end markers found !");
+            if found_start {
+                exit_with_error = true;
+                if verbose {
+                    eprint!("mismatch in start end markers found !");
+                }
             }
         } else if line.contains(start) && verbose {
             eprint!("warn found unexpecred start again at line {}", line_cnt);
@@ -47,7 +51,71 @@ pub fn update(
         eprint!("missmatch in start end markers found !");
     }
 
-    updated_lines
+    (exit_with_error, updated_lines)
+}
+
+// Define an enum for states
+enum State {
+    StateCopyLines,
+    StateDropLines,
+}
+
+// Define an enum for events
+enum Event {
+    EventNormalLine,
+    EventStartMatch,
+    EventEndMatch,
+}
+
+// Define an enum actions
+enum Action {
+    CopyLine,
+    DropLine,
+    InsertReplaceAndCopyLine,
+    InsertReplace,
+}
+
+// Define the state machine struct
+struct StateMachine {
+    state: State,
+}
+
+impl StateMachine {
+    fn new() -> Self {
+        StateMachine {
+            state: State::StateCopyLines,
+        }
+    }
+
+    fn transition(&mut self, event: Event) -> (bool, Action) {
+        // Use a match statement with a tuple of enums to cover all state and event combinations
+        match (&self.state, event) {
+            (State::StateCopyLines, Event::EventNormalLine) => {
+                self.state = State::StateCopyLines;
+                (false, Action::CopyLine)
+            }
+            (State::StateCopyLines, Event::EventStartMatch) => {
+                self.state = State::StateDropLines;
+                (false, Action::CopyLine) //keep StartMatch
+            }
+            (State::StateCopyLines, Event::EventEndMatch) => {
+                self.state = State::StateCopyLines;
+                (true, Action::CopyLine) //ERR keep line
+            }
+            (State::StateDropLines, Event::EventNormalLine) => {
+                self.state = State::StateDropLines;
+                (false, Action::DropLine)
+            }
+            (State::StateDropLines, Event::EventStartMatch) => {
+                self.state = State::StateDropLines;
+                (true, Action::DropLine) //ERR invalid keep dropping
+            }
+            (State::StateDropLines, Event::EventEndMatch) => {
+                self.state = State::StateCopyLines;
+                (false, Action::InsertReplaceAndCopyLine)
+            }
+        }
+    }
 }
 
 #[cfg(test)]
@@ -73,7 +141,8 @@ mod tests {
         let replace_text = "Replacement Text\nWith Multiple Lines";
         let debug = false;
 
-        let updated_lines = update(start_marker, end_marker, replace_text, lines, debug);
+        let (exit_err, updated_lines) =
+            update(start_marker, end_marker, replace_text, lines, debug);
 
         assert_eq!(updated_lines.len(), 6);
         assert_eq!(updated_lines[0], "Line 1");
@@ -82,6 +151,8 @@ mod tests {
         assert_eq!(updated_lines[3], "With Multiple Lines");
         assert_eq!(updated_lines[4], "This is the mark-end line");
         assert_eq!(updated_lines[5], "Line 6");
+
+        assert_eq!(exit_err, false);
     }
 
     #[test]
@@ -101,7 +172,8 @@ mod tests {
         let replace_text = "Replacement Text\nWith Multiple Lines";
         let debug = false;
 
-        let updated_lines = update(start_marker, end_marker, replace_text, lines, debug);
+        let (exit_err, updated_lines) =
+            update(start_marker, end_marker, replace_text, lines, debug);
 
         // Since there are no markers, the lines should remain unchanged
         assert_eq!(updated_lines.len(), 4);
@@ -109,5 +181,7 @@ mod tests {
         assert_eq!(updated_lines[1], "This is a regular line");
         assert_eq!(updated_lines[2], "Another regular line");
         assert_eq!(updated_lines[3], "Line 4");
+
+        assert_eq!(exit_err, false);
     }
 }

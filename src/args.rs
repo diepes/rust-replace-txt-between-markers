@@ -4,7 +4,7 @@ use clap::Parser;
 ///
 /// https://github.com/diepes/rust-replace-txt-between-markers
 #[derive(Parser, Debug)]
-#[command(author="Pieter E Smit", version, about, long_about )]
+#[command(author = "Pieter E Smit", version, about, long_about)]
 pub struct Args {
     /// start Marker string
     #[arg(short, long)]
