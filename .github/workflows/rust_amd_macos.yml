@@ -13,9 +13,9 @@ jobs:
       - name: Install latest rust toolchain
         uses: actions-rs/toolchain@v1
         with:
+          profile: minimal
           toolchain: stable
-          default: true
-          override: true
+          components: rustfmt, clippy
 
       - name: Build
         run: |
@@ -36,15 +36,13 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v1
+        uses: actions/checkout@v3
 
       - name: Install latest rust toolchain
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
           target: x86_64-apple-darwin
-          default: true
-          override: true
 
       - name: Build for mac
         run: |
@@ -52,8 +50,8 @@ jobs:
           ls -l target/release/replacetxt-macos
 
 
-  create_release:
-    # if: startsWith(github.ref, 'refs/tags/')
+  create_release_for_tag:
+    if: startsWith(github.ref, 'refs/tags/')
     needs: [build_amd64, build_macos]
     runs-on: ubuntu-latest
 
