@@ -53,7 +53,7 @@ jobs:
 
 
   create_release:
-    if: startsWith(github.ref, 'refs/tags/')
+    # if: startsWith(github.ref, 'refs/tags/')
     needs: [build_amd64, build_macos]
     runs-on: ubuntu-latest
 
