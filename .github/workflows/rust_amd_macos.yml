@@ -82,8 +82,11 @@ jobs:
         run: |
           echo "ls -l"
           ls -l
-          echo "ls -l ${{ runner.workspace }}/"
-          ls -l ${{ runner.workspace }}/
+          echo "ls -l ${{ runner.workspace }}/replacetxt-amd64/"
+          ls -l ${{ runner.workspace }}/replacetxt-amd64/
+          echo
+          echo "ls -l ${{ runner.workspace }}/replacetxt-macos/"
+          ls -l ${{ runner.workspace }}/replacetxt-macos/
           echo
 
       - name: Create Release - new tag
@@ -91,8 +94,8 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            ${{ runner.workspace }}/replacetxt-amd64
-            ${{ runner.workspace }}/replacetxt-macos
+            ${{ runner.workspace }}/replacetxt-amd64/replacetxt-amd64
+            ${{ runner.workspace }}/replacetxt-macos/replacetxt-macos
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
