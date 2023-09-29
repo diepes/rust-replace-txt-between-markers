@@ -29,6 +29,15 @@ jobs:
       - name: Check rust fmt
         run: cargo fmt -- --check
 
+      - name: Save artifact - replacetxt-amd64
+        uses: actions/upload-artifact@v3
+        with:
+          name: replacetxt-amd64
+          retention-days: 1
+          if-no-files-found: error
+          path: |
+            ${{ github.workspace }}/replacetxt-amd64
+
 
 
   build_macos:
@@ -50,18 +59,34 @@ jobs:
           ls -l ${{ runner.workspace }}/replacetxt-macos
 
 
+      - name: Save artifact - replacetxt-macos
+        uses: actions/upload-artifact@v3
+        with:
+          name: replacetxt-macos
+          retention-days: 1
+          if-no-files-found: error
+          path: |
+            ${{ github.workspace }}/replacetxt-macos
+
+
   create_release_for_tag:
     if: startsWith(github.ref, 'refs/tags/')
     needs: [build_amd64, build_macos]
     runs-on: ubuntu-latest
 
     steps:
-      - name: Build for mac
+      # Fetch Dump from artifact storage
+      - uses: actions/download-artifact@v3
+        with:
+          path: ${{ runner.workspace }} 
+
+      - name: List artifacts
         run: |
           echo "ls -l"
           ls -l
-          echo "ls -l ${{ runner.workspace }}"
-          ls -l ${{ runner.workspace }}
+          echo "ls -l ${{ runner.workspace }}/"
+          ls -l ${{ runner.workspace }}/
+          echo
 
       - name: Create Release - new tag
         id: create_release
@@ -72,3 +97,4 @@ jobs:
             ${{ runner.workspace }}/replacetxt-macos
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
