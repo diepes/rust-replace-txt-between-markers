@@ -15,7 +15,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v1
+        uses: actions/checkout@v3
       # # cache the build assets so they dont recompile every time.
       # - name: Cache Rust dependencies
       #   uses: actions/cache@v1.0.1
@@ -24,59 +24,66 @@ jobs:
       #     key: ${{ runner.OS }}-build-${{ hashFiles('**/Cargo.lock') }}
       #     restore-keys: |
       #       ${{ runner.OS }}-build-
+
       - name: Install latest rust toolchain
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
           default: true
           override: true
+
       - name: Install system dependencies
         run: |
           sudo apt-get update \
           && sudo apt-get install -y \
           libdbus-1-dev
+
       - name: Build
         run: cargo build --all --release && strip target/release/replacetxt && mv target/release/replacetxt target/release/replacetxt-amd64
+
       - name: Run tests
         run: |
           cargo test --verbose
-      - name: Upload binaries to release
-        uses: svenstaro/upload-release-action@v1-release
-        with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: target/release/replacetxt-amd64
-          asset_name: replacetxt
-          tag: build-${{ github.ref }}
-          overwrite: true
 
-  build-mac:
-    runs-on: macos-latest
-
-    steps:
       - name: Checkout
-        uses: actions/checkout@v1
-      - name: Cache Rust dependencies
-        uses: actions/cache@v1.0.1
-        with:
-          path: target
-          key: ${{ runner.OS }}-build-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.OS }}-build-
-      - name: Install latest rust toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: beta
-          target: x86_64-apple-darwin
-          default: true
-          override: true
+        uses: actions/checkout@v3
 
-      - name: Build for mac
-        run: cargo build --all --release && strip target/release/rust-aha-cli && mv target/release/rust-aha-cli target/release/replacetxt-apple
-
-      - name: Upload binaries to release
-        uses: svenstaro/upload-release-action@v1-release
+      - name: Release - new tag
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
         with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: target/release/replacetxt-apple
-          asset_name: replacetxt
-          tag: build-${{ github.ref }}
+          files: |
+            target/release/replacetxt-amd64
+
+
+  # build-mac:
+  #   runs-on: macos-latest
+
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v1
+  #     - name: Cache Rust dependencies
+  #       uses: actions/cache@v1.0.1
+  #       with:
+  #         path: target
+  #         key: ${{ runner.OS }}-build-${{ hashFiles('**/Cargo.lock') }}
+  #         restore-keys: |
+  #           ${{ runner.OS }}-build-
+  #     - name: Install latest rust toolchain
+  #       uses: actions-rs/toolchain@v1
+  #       with:
+  #         toolchain: beta
+  #         target: x86_64-apple-darwin
+  #         default: true
+  #         override: true
+
+  #     - name: Build for mac
+  #       run: cargo build --all --release && strip target/release/rust-aha-cli && mv target/release/rust-aha-cli target/release/replacetxt-apple
+
+  #     - name: Upload binaries to release
+  #       uses: svenstaro/upload-release-action@v1-release
+  #       with:
+  #         repo_token: ${{ secrets.GITHUB_TOKEN }}
+  #         file: target/release/replacetxt-apple
+  #         asset_name: replacetxt
+  #         tag: build-${{ github.ref }}

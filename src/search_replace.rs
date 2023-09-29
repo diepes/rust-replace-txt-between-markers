@@ -1,4 +1,5 @@
 // In search_replace.rs
+// StateMachine I 💜 🦀
 
 pub fn update(
     start: &str,
@@ -8,47 +9,64 @@ pub fn update(
     verbose: bool,
 ) -> (bool, Vec<String>) {
     let mut updated_lines = Vec::new();
-    let mut found_start = false;
-    let mut found_end = false;
+    let mut found_start = 0;
+    let mut found_end = 0;
     let mut line_cnt = 0;
     let mut exit_with_error = false;
+    let mut sm = StateMachine::new();
 
     for line in lines {
         line_cnt += 1;
-        if !found_start && line.contains(start) {
-            found_start = true;
-            found_end = false;
-            updated_lines.push(line.clone());
+        let (err, action) = match &line {
+            s if s.contains(start) => {
+                found_start += 1;
+                sm.transition(Event::StartMatch)
+            }
+            s if s.contains(end) => {
+                found_end += 1;
+                sm.transition(Event::EndMatch)
+            }
+            _ => sm.transition(Event::NormalLine),
+        };
+
+        if err {
+            exit_with_error = true;
             if verbose {
-                eprint!("found match for start marker at line {}", line_cnt);
+                eprint!("ERR search and replace at line {}", line_cnt);
             }
-        } else if found_start && !found_end && line.contains(end) {
-            found_end = true;
-            found_start = false;
-            // Split the multiline replace string by "\n" and add its lines separately
-            for replace_line in replace.lines() {
-                updated_lines.push(replace_line.to_string());
+        }
+
+        match action {
+            LineAction::Copy => {
+                updated_lines.push(line.clone());
             }
-            updated_lines.push(line.clone()); // Keep the end marker
-            if verbose {
-                eprint!("found match for end marker at line {}", line_cnt);
-            }
-        } else if !found_start {
-            updated_lines.push(line.clone());
-            if found_start {
-                exit_with_error = true;
-                if verbose {
-                    eprint!("mismatch in start end markers found !");
+            LineAction::Drop => {}
+            LineAction::InsertReplaceAndCopy => {
+                // Split the multiline replace string by "\n" and add its lines separately
+                for replace_line in replace.lines() {
+                    updated_lines.push(replace_line.to_string());
                 }
+                updated_lines.push(line.clone()); // Keep the end marker
             }
-        } else if line.contains(start) && verbose {
-            eprint!("warn found unexpecred start again at line {}", line_cnt);
-        } else if line.contains(end) && verbose {
-            eprint!("warn found unexpected end again at line {}", line_cnt);
         }
     }
-    if verbose && found_start {
-        eprint!("missmatch in start end markers found !");
+    if found_start == 0 {
+        exit_with_error = true;
+        if verbose {
+            eprint!(
+                "ERR start and end did not match anyting search and replace at line {}",
+                line_cnt
+            );
+        }
+    }
+    if found_start != found_end {
+        exit_with_error = true;
+        if verbose {
+            eprint!(
+                "ERR number of matches for start and end is differs {} != {}",
+                found_start, found_end
+            );
+        }
     }
 
     (exit_with_error, updated_lines)
@@ -62,17 +80,16 @@ enum State {
 
 // Define an enum for events
 enum Event {
-    EventNormalLine,
-    EventStartMatch,
-    EventEndMatch,
+    NormalLine,
+    StartMatch,
+    EndMatch,
 }
 
 // Define an enum actions
-enum Action {
-    CopyLine,
-    DropLine,
-    InsertReplaceAndCopyLine,
-    InsertReplace,
+enum LineAction {
+    Copy,
+    Drop,
+    InsertReplaceAndCopy,
 }
 
 // Define the state machine struct
@@ -87,32 +104,32 @@ impl StateMachine {
         }
     }
 
-    fn transition(&mut self, event: Event) -> (bool, Action) {
+    fn transition(&mut self, event: Event) -> (bool, LineAction) {
         // Use a match statement with a tuple of enums to cover all state and event combinations
         match (&self.state, event) {
-            (State::StateCopyLines, Event::EventNormalLine) => {
+            (State::StateCopyLines, Event::NormalLine) => {
                 self.state = State::StateCopyLines;
-                (false, Action::CopyLine)
+                (false, LineAction::Copy)
             }
-            (State::StateCopyLines, Event::EventStartMatch) => {
+            (State::StateCopyLines, Event::StartMatch) => {
                 self.state = State::StateDropLines;
-                (false, Action::CopyLine) //keep StartMatch
+                (false, LineAction::Copy) //keep StartMatch
             }
-            (State::StateCopyLines, Event::EventEndMatch) => {
+            (State::StateCopyLines, Event::EndMatch) => {
                 self.state = State::StateCopyLines;
-                (true, Action::CopyLine) //ERR keep line
+                (true, LineAction::Copy) //ERR keep line
             }
-            (State::StateDropLines, Event::EventNormalLine) => {
+            (State::StateDropLines, Event::NormalLine) => {
                 self.state = State::StateDropLines;
-                (false, Action::DropLine)
+                (false, LineAction::Drop)
             }
-            (State::StateDropLines, Event::EventStartMatch) => {
+            (State::StateDropLines, Event::StartMatch) => {
                 self.state = State::StateDropLines;
-                (true, Action::DropLine) //ERR invalid keep dropping
+                (true, LineAction::Drop) //ERR invalid keep dropping
             }
-            (State::StateDropLines, Event::EventEndMatch) => {
+            (State::StateDropLines, Event::EndMatch) => {
                 self.state = State::StateCopyLines;
-                (false, Action::InsertReplaceAndCopyLine)
+                (false, LineAction::InsertReplaceAndCopy)
             }
         }
     }
@@ -182,6 +199,6 @@ mod tests {
         assert_eq!(updated_lines[2], "Another regular line");
         assert_eq!(updated_lines[3], "Line 4");
 
-        assert_eq!(exit_err, false);
+        assert_eq!(exit_err, true); //exit error, no match.
     }
 }
