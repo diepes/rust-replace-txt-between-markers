@@ -19,8 +19,8 @@ jobs:
 
       - name: Build
         run: |
-          cargo build --all --release && strip target/release/replacetxt && mv target/release/replacetxt target/release/replacetxt-amd64
-          ls -l target/release/replacetxt-amd64
+          cargo build --all --release && strip target/release/replacetxt && mv target/release/replacetxt ${{ runner.workspace }}/replacetxt-amd64
+          ls -l ${{ runner.workspace }}/replacetxt-amd64
 
       - name: Run tests
         run: |
@@ -46,8 +46,8 @@ jobs:
 
       - name: Build for mac
         run: |
-          cargo build --all --release && strip target/release/replacetxt && mv target/release/replacetxt target/release/replacetxt-macos
-          ls -l target/release/replacetxt-macos
+          cargo build --all --release && strip target/release/replacetxt && mv target/release/replacetxt ${{ runner.workspace }}/replacetxt-macos
+          ls -l ${{ runner.workspace }}/replacetxt-macos
 
 
   create_release_for_tag:
@@ -56,12 +56,19 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Build for mac
+        run: |
+          echo "ls -l"
+          ls -l
+          echo "ls -l ${{ runner.workspace }}"
+          ls -l ${{ runner.workspace }}
+
       - name: Create Release - new tag
         id: create_release
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            target/release/replacetxt-amd64
-            target/release/replacetxt-macos
+            ${{ runner.workspace }}/replacetxt-amd64
+            ${{ runner.workspace }}/replacetxt-macos
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
