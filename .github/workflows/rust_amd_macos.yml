@@ -49,7 +49,7 @@ jobs:
       - name: Build for mac
         run: |
           cargo build --all --release && strip target/release/replacetxt && mv target/release/replacetxt target/release/replacetxt-macos
-          target/release/replacetxt-macos
+          ls -l target/release/replacetxt-macos
 
 
   create_release:
