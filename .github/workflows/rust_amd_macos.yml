@@ -19,8 +19,8 @@ jobs:
 
       - name: Build
         run: |
-          cargo build --all --release && strip target/release/replacetxt && mv target/release/replacetxt ${{ runner.workspace }}/replacetxt-amd64
-          ls -l ${{ runner.workspace }}/replacetxt-amd64
+          cargo build --all --release && strip target/release/replacetxt && mv target/release/replacetxt target/release/replacetxt-amd64
+          ls -l target/release/replacetxt-amd64
 
       - name: Run tests
         run: |
@@ -29,14 +29,13 @@ jobs:
       - name: Check rust fmt
         run: cargo fmt -- --check
 
-      - name: Save artifact - replacetxt-amd64
+      - name: upload-artifact - replacetxt-amd64
         uses: actions/upload-artifact@v3
         with:
           name: replacetxt-amd64
           retention-days: 1
           if-no-files-found: error
-          path: |
-            ${{ github.workspace }}/replacetxt-amd64
+          path: target/release/replacetxt-amd64
 
 
 
@@ -55,18 +54,17 @@ jobs:
 
       - name: Build for mac
         run: |
-          cargo build --all --release && strip target/release/replacetxt && mv target/release/replacetxt ${{ runner.workspace }}/replacetxt-macos
-          ls -l ${{ runner.workspace }}/replacetxt-macos
+          cargo build --all --release && strip target/release/replacetxt && mv target/release/replacetxt target/release/replacetxt-macos
+          ls -l target/release/replacetxt-macos
 
 
-      - name: Save artifact - replacetxt-macos
+      - name: upload-artifact - replacetxt-macos
         uses: actions/upload-artifact@v3
         with:
           name: replacetxt-macos
           retention-days: 1
           if-no-files-found: error
-          path: |
-            ${{ github.workspace }}/replacetxt-macos
+          path: target/release/replacetxt-macos
 
 
   create_release_for_tag:
