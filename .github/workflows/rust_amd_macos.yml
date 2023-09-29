@@ -32,21 +32,21 @@ jobs:
           default: true
           override: true
 
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update \
-          && sudo apt-get install -y \
-          libdbus-1-dev
+      # - name: Install system dependencies
+      #   run: |
+      #     sudo apt-get update \
+      #     && sudo apt-get install -y \
+      #     libdbus-1-dev
+
 
       - name: Build
-        run: cargo build --all --release && strip target/release/replacetxt && mv target/release/replacetxt target/release/replacetxt-amd64
+        run: |
+          cargo build --all --release && strip target/release/replacetxt && mv target/release/replacetxt target/release/replacetxt-amd64
+          ls -l target/release/replacetxt-amd64
 
       - name: Run tests
         run: |
           cargo test --verbose
-
-      - name: Checkout
-        uses: actions/checkout@v3
 
       - name: Release - new tag
         uses: softprops/action-gh-release@v1
