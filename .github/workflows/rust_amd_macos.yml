@@ -3,27 +3,12 @@ name: Rust
 on: [push]
 
 jobs:
-  rustfmt:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v1
-      - run: rustup component add rustfmt
-      - run: cargo fmt -- --check
-  
-  build:
+  build_amd64:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-      # # cache the build assets so they dont recompile every time.
-      # - name: Cache Rust dependencies
-      #   uses: actions/cache@v1.0.1
-      #   with:
-      #     path: target
-      #     key: ${{ runner.OS }}-build-${{ hashFiles('**/Cargo.lock') }}
-      #     restore-keys: |
-      #       ${{ runner.OS }}-build-
 
       - name: Install latest rust toolchain
         uses: actions-rs/toolchain@v1
@@ -31,13 +16,6 @@ jobs:
           toolchain: stable
           default: true
           override: true
-
-      # - name: Install system dependencies
-      #   run: |
-      #     sudo apt-get update \
-      #     && sudo apt-get install -y \
-      #     libdbus-1-dev
-
 
       - name: Build
         run: |
@@ -48,42 +26,43 @@ jobs:
         run: |
           cargo test --verbose
 
-      - name: Release - new tag
+      - name: Check rust fmt
+        run: cargo fmt -- --check
+
+
+
+  build_macos:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v1
+
+      - name: Install latest rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: x86_64-apple-darwin
+          default: true
+          override: true
+
+      - name: Build for mac
+        run: cargo build --all --release && strip target/release/replacetxt && mv target/release/replacetxt target/release/replacetxt-macos
+
+
+
+  create_release:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: [build_amd64, build_macos]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Create Release - new tag
+        id: create_release
         uses: softprops/action-gh-release@v1
-        if: startsWith(github.ref, 'refs/tags/')
         with:
           files: |
-            target/release/replacetxt-amd64
-
-
-  # build-mac:
-  #   runs-on: macos-latest
-
-  #   steps:
-  #     - name: Checkout
-  #       uses: actions/checkout@v1
-  #     - name: Cache Rust dependencies
-  #       uses: actions/cache@v1.0.1
-  #       with:
-  #         path: target
-  #         key: ${{ runner.OS }}-build-${{ hashFiles('**/Cargo.lock') }}
-  #         restore-keys: |
-  #           ${{ runner.OS }}-build-
-  #     - name: Install latest rust toolchain
-  #       uses: actions-rs/toolchain@v1
-  #       with:
-  #         toolchain: beta
-  #         target: x86_64-apple-darwin
-  #         default: true
-  #         override: true
-
-  #     - name: Build for mac
-  #       run: cargo build --all --release && strip target/release/rust-aha-cli && mv target/release/rust-aha-cli target/release/replacetxt-apple
-
-  #     - name: Upload binaries to release
-  #       uses: svenstaro/upload-release-action@v1-release
-  #       with:
-  #         repo_token: ${{ secrets.GITHUB_TOKEN }}
-  #         file: target/release/replacetxt-apple
-  #         asset_name: replacetxt
-  #         tag: build-${{ github.ref }}
+            ${{ runner.workspace }}/artifact-amd
+            ${{ runner.workspace }}/artifact-macos
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
